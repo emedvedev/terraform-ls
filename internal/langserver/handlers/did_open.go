@@ -9,9 +9,7 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/google/uuid"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
-	"github.com/hashicorp/terraform-ls/internal/langserver/handlers/command"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -160,41 +158,6 @@ func humanReadablePath(rootDir, path string) string {
 }
 
 func askInitForNoModuleCandidates(ctx context.Context, rootDir string, dh ilsp.DirHandler) error {
-	msg := fmt.Sprintf("No schema found for %q."+
-		" Functionality may be limited."+
-		// Unfortunately we can't be any more specific wrt where
-		// because we don't gather "init-able folders" in any way
-		" You may need to run terraform init.", humanReadablePath(rootDir, dh.Dir()))
-	title := "terraform init"
-	resp, err := jrpc2.PushCall(ctx, "window/showMessageRequest", lsp.ShowMessageRequestParams{
-		Type:    lsp.Info,
-		Message: msg,
-		Actions: []lsp.MessageActionItem{
-			{
-				Title: title,
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	var action lsp.MessageActionItem
-	if err := resp.UnmarshalResult(&action); err != nil {
-		return fmt.Errorf("unmarshal MessageActionItem: %+v", err)
-	}
-	if action.Title == title {
-		ctx, err := initiateProgress(ctx)
-		if err != nil {
-			return err
-		}
-		_, err = command.TerraformInitHandler(ctx, cmd.CommandArgs{
-			"uri": dh.URI(),
-		})
-		if err != nil {
-			return fmt.Errorf("Initialization failed: %w", err)
-		}
-		return nil
-	}
 	return nil
 }
 
